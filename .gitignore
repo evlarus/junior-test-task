@@ -29,3 +29,11 @@ logs/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Spring Initializr / IDE leftovers
+HELP.md
+.apt_generated/
+.sts4-cache/
+.springBeans
+*.ipr
+*.iws

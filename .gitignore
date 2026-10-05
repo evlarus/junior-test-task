@@ -1,0 +1,31 @@
+# Build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/*
+!.vscode/mcp.json
+.classpath
+.project
+.settings/
+.factorypath
+out/
+bin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Local secrets and environment
+.env
+.env.*
+!.env.example
+
+# Claude Code local settings
+.claude/settings.local.json

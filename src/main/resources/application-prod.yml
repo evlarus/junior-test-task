@@ -1,0 +1,11 @@
+# Production: no defaults on purpose, the application does not start without these variables.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+logging:
+  structured:
+    format:
+      console: ecs

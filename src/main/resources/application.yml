@@ -9,6 +9,11 @@ spring:
     virtual:
       enabled: true
 
+  datasource:
+    hikari:
+      # A transaction waiting for a locked row gives up after this time instead of hanging; the work is retried later
+      connection-init-sql: SET lock_timeout TO '${DB_LOCK_TIMEOUT:5s}'
+
   jpa:
     open-in-view: false
     hibernate:

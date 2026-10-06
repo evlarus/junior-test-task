@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    hikari:
+      # Lock-timeout tests should not wait the production 5 seconds
+      connection-init-sql: SET lock_timeout TO '1s'
+  jpa:
+    properties:
+      hibernate:
+        # Needed by QueryCounter to assert the number of SQL statements
+        generate_statistics: true
+
+logging:
+  level:
+    # Statistics are collected for assertions, not printed after every session
+    org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: WARN

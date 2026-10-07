@@ -2,6 +2,8 @@ package com.evlarus.spendinglimit.common.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.evlarus.spendinglimit.common.domain.ConflictException;
+import com.evlarus.spendinglimit.common.domain.DomainException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -47,6 +49,29 @@ class GlobalExceptionHandlerTest {
         void failure() {
             throw new IllegalStateException("internal detail that must not leak");
         }
+
+        @GetMapping("/business-rule")
+        void businessRule() {
+            throw new DomainException("Transaction date is in the future") {
+            };
+        }
+
+        @GetMapping("/conflict")
+        void conflict() {
+            throw new ConflictException("Already processed") {
+            };
+        }
+    }
+
+    @Test
+    void brokenBusinessRuleIsUnprocessable() {
+        assertProblem(mvc.get().uri("/test/business-rule").exchange(),
+                HttpStatus.UNPROCESSABLE_CONTENT, "Transaction date is in the future");
+    }
+
+    @Test
+    void conflictWithTheCurrentStateIsAConflict() {
+        assertProblem(mvc.get().uri("/test/conflict").exchange(), HttpStatus.CONFLICT, "Already processed");
     }
 
     @Autowired

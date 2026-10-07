@@ -60,6 +60,41 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logbook:
+  predicate:
+    exclude:
+      - path: /actuator/**
+      - path: /v3/api-docs/**
+      - path: /swagger-ui/**
+  obfuscate:
+    headers:
+      - Authorization
+      - Cookie
+      - Set-Cookie
+    parameters:
+      - apikey
+      - account
+    json-body-fields:
+      - account
+      - account_from
+      - account_to
+  format:
+    style: http
+
 app:
   # Calendar days and months (limit periods, the day of a rate) are counted in this zone
   business-zone: ${BUSINESS_ZONE:UTC}

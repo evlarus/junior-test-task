@@ -68,6 +68,7 @@ public class ExchangeRateService {
         }
         Optional<ExchangeRate> stored = repository.find(currency, date);
         if (stored.isPresent()) {
+            log.debug("Using the stored {} rate for {}", currency, date);
             count("stored");
             return new RateLookup.Found(stored.get());
         }

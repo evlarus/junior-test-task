@@ -5,7 +5,11 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
-logging:
-  structured:
-    format:
-      console: ecs
+logbook:
+  format:
+    style: json
+
+management:
+  endpoint:
+    health:
+      show-details: never

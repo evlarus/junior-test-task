@@ -34,6 +34,18 @@ class ApplicationSmokeIT {
     }
 
     @Test
+    void openApiDocumentUsesTheSameJsonNamesAsTheApi() {
+        client.get().uri("/v3/api-docs")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.components.schemas.SetLimitRequest.properties.limit_sum").exists()
+                .jsonPath("$.components.schemas.SetLimitRequest.properties.limitSum").doesNotExist()
+                .jsonPath("$.components.schemas.SetLimitRequest.properties.expense_category.enum[0]").isEqualTo("product")
+                .jsonPath("$.paths['/api/client/v1/limits'].post.operationId").exists();
+    }
+
+    @Test
     void swaggerUiIsServed() {
         client.get().uri("/swagger-ui/index.html")
                 .exchange()

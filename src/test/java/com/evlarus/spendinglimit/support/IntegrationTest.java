@@ -23,6 +23,6 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
 @ActiveProfiles("test")
-@Import({TestcontainersConfiguration.class, TwelveDataMockConfiguration.class})
+@Import({TestcontainersConfiguration.class, TwelveDataMockConfiguration.class, MutableClockConfiguration.class})
 public @interface IntegrationTest {
 }

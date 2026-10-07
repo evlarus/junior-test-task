@@ -1,5 +1,7 @@
 package com.evlarus.spendinglimit.transaction.domain;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface TransactionRepository {
@@ -8,6 +10,8 @@ public interface TransactionRepository {
     Transaction add(Transaction transaction);
 
     Optional<Transaction> findById(long id);
+
+    List<Transaction> findAllById(Collection<Long> ids);
 
     /**
      * Returns the transaction locked until the current database transaction ends, so that it cannot be processed

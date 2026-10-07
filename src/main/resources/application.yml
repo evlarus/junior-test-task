@@ -79,3 +79,14 @@ app:
       units-per-usd:
         KZT: 450.00
         RUB: 75.00
+  limits:
+    default-amount: 1000.00
+  transactions:
+    allowed-clock-skew: 5m
+    retry:
+      poll-interval: 30s
+      first-delay: 30s
+      max-delay: 1h
+      lease: 2m
+      batch-size: 50
+      parallelism: 8

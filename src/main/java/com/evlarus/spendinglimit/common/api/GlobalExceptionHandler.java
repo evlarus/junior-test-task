@@ -101,13 +101,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private static String describeUnreadableBody(HttpMessageNotReadableException ex) {
-        return switch (ex.getMostSpecificCause()) {
+        return switch (firstJacksonCause(ex)) {
             case UnrecognizedPropertyException e -> "Unknown property '%s'".formatted(e.getPropertyName());
             case MismatchedInputException e when !e.getPath().isEmpty() ->
                     "Invalid value for property '%s'".formatted(jsonPath(e.getPath()));
             case JacksonException e -> "Malformed JSON request body";
-            default -> "Request body is missing or unreadable";
+            case null -> "Request body is missing or unreadable";
         };
+    }
+
+    private static @Nullable JacksonException firstJacksonCause(Throwable exception) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof JacksonException jacksonException) {
+                return jacksonException;
+            }
+        }
+        return null;
     }
 
     /** {@code [items, 0, sum]} -> {@code items[0].sum}. Names are already JSON names. */

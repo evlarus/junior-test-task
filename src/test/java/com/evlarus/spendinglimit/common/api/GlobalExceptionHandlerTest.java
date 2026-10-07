@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -34,7 +35,8 @@ class GlobalExceptionHandlerTest {
 
         record Payload(
                 @NotNull @Pattern(regexp = "\\d{10}", message = "must consist of 10 digits") String accountFrom,
-                @NotNull @Positive BigDecimal sum) {
+                @NotNull @Positive BigDecimal sum,
+                OffsetDateTime occurredAt) {
         }
 
         @PostMapping("/payload")
@@ -106,6 +108,15 @@ class GlobalExceptionHandlerTest {
                 """);
 
         assertProblem(result, HttpStatus.BAD_REQUEST, "Invalid value for property 'sum'");
+    }
+
+    @Test
+    void valueThatFailsToParseIsNamedInDetail() {
+        MvcTestResult result = post("""
+                {"account_from": "0000000123", "sum": 1, "occurred_at": "2022-01-30T00:00:00"}
+                """);
+
+        assertProblem(result, HttpStatus.BAD_REQUEST, "Invalid value for property 'occurred_at'");
     }
 
     @Test

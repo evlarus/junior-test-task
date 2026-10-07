@@ -43,3 +43,15 @@ jobs:
             target/site/jacoco/
           if-no-files-found: ignore
           retention-days: 7
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    needs: build
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+
+      - name: Build the image
+        run: docker build --tag spending-limit-service:ci .

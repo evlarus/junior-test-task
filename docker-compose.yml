@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-spending_limits}
+      POSTGRES_USER: ${DB_USERNAME:-spending_limits}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-spending_limits}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      # PostgreSQL 18+ images keep data under /var/lib/postgresql/<major>/, so the volume is mounted one level up
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    image: spending-limit-service:local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-spending_limits}
+      DB_USERNAME: ${DB_USERNAME:-spending_limits}
+      DB_PASSWORD: ${DB_PASSWORD:-spending_limits}
+      BUSINESS_ZONE: ${BUSINESS_ZONE:-UTC}
+      RATES_PROVIDER: ${RATES_PROVIDER:-fixed}
+      TWELVEDATA_API_KEY: ${TWELVEDATA_API_KEY:-}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health/readiness | grep -q UP"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  postgres-data:

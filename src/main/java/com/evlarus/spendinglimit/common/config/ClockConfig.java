@@ -1,5 +1,6 @@
 package com.evlarus.spendinglimit.common.config;
 
+import com.evlarus.spendinglimit.common.domain.BusinessCalendar;
 import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,5 +15,10 @@ public class ClockConfig {
     @Bean
     Clock clock() {
         return Clock.systemUTC();
+    }
+
+    @Bean
+    BusinessCalendar businessCalendar(AppProperties properties) {
+        return new BusinessCalendar(properties.businessZone());
     }
 }

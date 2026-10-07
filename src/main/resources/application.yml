@@ -47,5 +47,35 @@ spring:
     locale: en
     locale-resolver: fixed
 
+  http:
+    serviceclient:
+      twelvedata:
+        base-url: ${TWELVEDATA_BASE_URL:https://api.twelvedata.com}
+        connect-timeout: 2s
+        read-timeout: 3s
+        # Key in a header, not in the URL: URLs end up in access logs, proxies and error messages
+        default-header:
+          Authorization: apikey ${app.rates.twelve-data.api-key}
+
 server:
   port: ${SERVER_PORT:8080}
+
+app:
+  # Calendar days and months (limit periods, the day of a rate) are counted in this zone
+  business-zone: ${BUSINESS_ZONE:UTC}
+  scheduling:
+    enabled: true
+  rates:
+    provider: ${RATES_PROVIDER:twelvedata}
+    lookback-days: 10
+    supported-currencies: KZT, RUB
+    prefetch-cron: "0 5 0 * * *"
+    twelve-data:
+      api-key: ${TWELVEDATA_API_KEY:}
+      # Immediate retries of transient failures: 200 ms, then 400 ms
+      max-retries: 2
+      retry-delay: 200ms
+    fixed:
+      units-per-usd:
+        KZT: 450.00
+        RUB: 75.00

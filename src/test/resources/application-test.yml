@@ -8,6 +8,21 @@ spring:
       hibernate:
         # Needed by QueryCounter to assert the number of SQL statements
         generate_statistics: true
+  http:
+    serviceclient:
+      twelvedata:
+        # base-url points to WireMock, see ExternalServicesConfiguration
+        read-timeout: 500ms
+
+app:
+  # Jobs are triggered explicitly by the tests that need them
+  scheduling:
+    enabled: false
+  rates:
+    provider: twelvedata
+    twelve-data:
+      api-key: test-api-key
+      retry-delay: 10ms
 
 logging:
   level:

@@ -67,7 +67,7 @@ public class TransactionProcessor {
         Instant now = clock.instant();
         MonthlySpending spending = spendings.lockOrCreate(
                 transaction.accountFrom(), transaction.category(), transaction.businessMonth(calendar));
-        SpendingLimit limit = limitInForce(transaction, now);
+        SpendingLimit limit = limitInForce(transaction);
 
         LimitCheck check = transaction.process(rate, spending, limit, calendar, now);
 
@@ -80,10 +80,10 @@ public class TransactionProcessor {
         return Optional.of(transaction);
     }
 
-    private SpendingLimit limitInForce(Transaction transaction, Instant now) {
-        return limits.findLatestClientLimit(
-                        transaction.accountFrom(), transaction.category(), transaction.occurredAt().toInstant())
+    private SpendingLimit limitInForce(Transaction transaction) {
+        Instant occurredAt = transaction.occurredAt().toInstant();
+        return limits.findLatestClientLimit(transaction.accountFrom(), transaction.category(), occurredAt)
                 .orElseGet(() -> limits.findOrCreateSystemDefault(SpendingLimit.systemDefault(
-                        transaction.accountFrom(), transaction.category(), defaultLimit, now)));
+                        transaction.accountFrom(), transaction.category(), defaultLimit, occurredAt)));
     }
 }

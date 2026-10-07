@@ -3,16 +3,22 @@ package com.evlarus.spendinglimit.limit.infrastructure.persistence;
 import com.evlarus.spendinglimit.common.domain.AccountNumber;
 import com.evlarus.spendinglimit.common.domain.ExpenseCategory;
 import com.evlarus.spendinglimit.common.domain.Money;
+import com.evlarus.spendinglimit.limit.domain.LimitAlreadySetException;
 import com.evlarus.spendinglimit.limit.domain.SpendingLimit;
 import com.evlarus.spendinglimit.limit.domain.SpendingLimitRepository;
 import java.time.Instant;
 import java.util.Currency;
 import java.util.Optional;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 class JpaSpendingLimitRepository implements SpendingLimitRepository {
+
+    /** Unique index of client limits per account, category and moment (V1__create_spending_limit.sql). */
+    private static final String CLIENT_LIMIT_MOMENT_INDEX = "ux_spending_limit_client_moment";
 
     private final SpendingLimitJpaRepository jpaRepository;
 
@@ -27,7 +33,14 @@ class JpaSpendingLimitRepository implements SpendingLimitRepository {
             throw new IllegalArgumentException("Spending limit %d is already saved; limits are immutable"
                     .formatted(limit.id()));
         }
-        return toDomain(jpaRepository.save(toEntity(limit)));
+        try {
+            return toDomain(jpaRepository.save(toEntity(limit)));
+        } catch (DataIntegrityViolationException e) {
+            if (violates(e, CLIENT_LIMIT_MOMENT_INDEX)) {
+                throw new LimitAlreadySetException(limit.category());
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -52,6 +65,17 @@ class JpaSpendingLimitRepository implements SpendingLimitRepository {
                 .findByAccountAndExpenseCategoryAndSystemDefaultTrue(candidate.account().value(), candidate.category())
                 .map(JpaSpendingLimitRepository::toDomain)
                 .orElseThrow(() -> new IllegalStateException("System default limit was not stored"));
+    }
+
+    /** Only this adapter knows constraint names; a violation of any other constraint is a bug and is rethrown. */
+    private static boolean violates(DataIntegrityViolationException exception, String constraint) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException violation
+                    && constraint.equalsIgnoreCase(violation.getConstraintName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static SpendingLimit toDomain(SpendingLimitEntity entity) {

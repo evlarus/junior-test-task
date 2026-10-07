@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.evlarus.spendinglimit.common.domain.AccountNumber;
 import com.evlarus.spendinglimit.common.domain.Money;
+import com.evlarus.spendinglimit.limit.domain.LimitAlreadySetException;
 import com.evlarus.spendinglimit.limit.domain.SpendingLimit;
 import com.evlarus.spendinglimit.limit.domain.SpendingLimitRepository;
 import com.evlarus.spendinglimit.support.IntegrationTest;
@@ -22,7 +23,6 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
@@ -72,7 +72,7 @@ class SpendingLimitRepositoryIT {
         addClientLimit("1000", "2022-01-01T00:00:00Z");
 
         assertThatThrownBy(() -> addClientLimit("2000", "2022-01-01T00:00:00Z"))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                .isInstanceOf(LimitAlreadySetException.class);
     }
 
     @Test

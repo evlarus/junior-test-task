@@ -1,5 +1,7 @@
 package com.evlarus.spendinglimit.common.api;
 
+import com.evlarus.spendinglimit.common.domain.ConflictException;
+import com.evlarus.spendinglimit.common.domain.DomainException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -70,6 +72,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, describeUnreadableBody(ex));
         return handleExceptionInternal(ex, problem, headers, status, request);
+    }
+
+    /** The request is valid but conflicts with the current state. */
+    @ExceptionHandler(ConflictException.class)
+    ProblemDetail handleConflict(ConflictException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    /** The request is valid but breaks a business rule. */
+    @ExceptionHandler(DomainException.class)
+    ProblemDetail handleBusinessRule(DomainException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

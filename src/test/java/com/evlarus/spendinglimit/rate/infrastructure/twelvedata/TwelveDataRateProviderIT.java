@@ -67,6 +67,20 @@ class TwelveDataRateProviderIT {
     }
 
     @Test
+    void dayListedTwiceKeepsTheFirstClose() {
+        // Shape of a real USD/RUB response from October 2026
+        twelveDataMock.stubFor(timeSeriesRequest("KZT").willReturn(okJson("""
+                {"values":[{"datetime":"2022-01-03","close":"433.10000"},
+                           {"datetime":"2022-01-03","close":"433.15000"},
+                           {"datetime":"2021-12-31","close":"431.80000"}],
+                 "status":"ok"}""")));
+
+        assertThat(provider.dailyCloses(KZT, FRIDAY, MONDAY)).containsExactly(
+                new DailyClose(KZT, MONDAY, new BigDecimal("433.1")),
+                new DailyClose(KZT, FRIDAY, new BigDecimal("431.8")));
+    }
+
+    @Test
     void errorReportedInTheBodyWithHttp200IsAFailure() {
         twelveDataMock.stubFor(timeSeriesRequest("KZT").willReturn(okJson(error(400, "**symbol** not found"))));
 
@@ -104,15 +118,15 @@ class TwelveDataRateProviderIT {
 
     @Test
     void timeoutIsNotRetried() {
-        // read-timeout is 500 ms in the test profile
-        twelveDataMock.stubFor(timeSeriesRequest("KZT").willReturn(okJson(CLOSES).withFixedDelay(1_500)));
+        // read-timeout is 2 s in the test profile; with retries the call would take three timeouts (over 6 s)
+        twelveDataMock.stubFor(timeSeriesRequest("KZT").willReturn(okJson(CLOSES).withFixedDelay(3_000)));
         long started = System.nanoTime();
 
         assertThatThrownBy(() -> provider.dailyCloses(KZT, FRIDAY, MONDAY))
                 .isInstanceOf(RateProviderException.class)
                 .isNotInstanceOf(TransientRateProviderException.class)
                 .hasMessageContaining("did not respond in time");
-        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofMillis(1_400));
+        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofMillis(2_900));
         twelveDataMock.verify(exactly(1), timeSeriesRequested("KZT"));
     }
 

@@ -7,7 +7,11 @@ import java.util.Optional;
 
 public interface SpendingLimitRepository {
 
-    /** Stores a new limit and returns it with its id. Limits are never updated, so a saved limit is rejected. */
+    /**
+     * Stores a new limit and returns it with its id. Limits are never updated, so a saved limit is rejected.
+     *
+     * @throws LimitAlreadySetException when a client limit of the account and category took effect at the same moment
+     */
     SpendingLimit add(SpendingLimit limit);
 
     /**

@@ -53,6 +53,21 @@ class ApplicationSmokeIT {
     }
 
     @Test
+    void openApiDocumentDescribesErrorsAsProblemDetails() {
+        client.get().uri("/v3/api-docs")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.components.schemas.Problem.properties.errors").exists()
+                .jsonPath("$.paths['/api/client/v1/limits'].post.responses['400'].content['application/problem+json'].schema['$ref']")
+                .isEqualTo("#/components/schemas/Problem")
+                .jsonPath("$.paths['/api/integration/v1/transactions'].post.responses['500'].content['application/problem+json']")
+                .exists()
+                .jsonPath("$.paths['/api/integration/v1/transactions'].post.responses['201'].content['application/problem+json']")
+                .doesNotExist();
+    }
+
+    @Test
     void unknownEndpointReturnsProblemDetail() {
         client.get().uri("/no-such-endpoint")
                 .exchange()

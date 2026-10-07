@@ -10,7 +10,9 @@ import com.evlarus.spendinglimit.transaction.domain.TransactionStatus;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import java.time.ZoneOffset;
+import java.util.Collection;
 import java.util.Currency;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
@@ -50,6 +52,12 @@ class JpaTransactionRepository implements TransactionRepository {
     @Transactional(readOnly = true)
     public Optional<Transaction> findById(long id) {
         return jpaRepository.findById(id).map(JpaTransactionRepository::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Transaction> findAllById(Collection<Long> ids) {
+        return jpaRepository.findAllById(ids).stream().map(JpaTransactionRepository::toDomain).toList();
     }
 
     @Override

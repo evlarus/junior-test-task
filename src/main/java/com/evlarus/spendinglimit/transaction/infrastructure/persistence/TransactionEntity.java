@@ -79,4 +79,13 @@ public class TransactionEntity {
 
     @Column(name = "processed_at")
     private Instant processedAt;
+
+    @Column(name = "attempts", nullable = false)
+    private int attempts;
+
+    @Column(name = "next_attempt_at")
+    private Instant nextAttemptAt;
+
+    @Column(name = "last_error", length = 500)
+    private String lastError;
 }

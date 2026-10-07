@@ -11,7 +11,7 @@ spring:
   http:
     serviceclient:
       twelvedata:
-        # base-url points to WireMock, see ExternalServicesConfiguration
+        # base-url points to WireMock, see TwelveDataMockConfiguration
         read-timeout: 2s
 
 app:
@@ -23,6 +23,9 @@ app:
     twelve-data:
       api-key: test-api-key
       retry-delay: 10ms
+  transactions:
+    retry:
+      first-delay: 0s
 
 logging:
   level:

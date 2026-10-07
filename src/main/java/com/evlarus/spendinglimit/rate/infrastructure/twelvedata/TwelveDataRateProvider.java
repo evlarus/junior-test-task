@@ -10,7 +10,9 @@ import java.net.http.HttpTimeoutException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Currency;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.resilience.annotation.Retryable;
@@ -54,9 +56,17 @@ class TwelveDataRateProvider implements ExchangeRateProvider {
         if (!response.isOk()) {
             throw bodyError(response);
         }
-        return response.values() == null ? List.of() : response.values().stream()
-                .map(bar -> toClose(currency, bar))
-                .toList();
+        if (response.values() == null) {
+            return List.of();
+        }
+        // Real responses sometimes list the same day twice with slightly different closes (seen for USD/RUB);
+        // the first one listed is kept, so which rate a day gets never depends on chance
+        Map<LocalDate, DailyClose> closesByDay = new LinkedHashMap<>();
+        for (TimeSeriesResponse.Bar bar : response.values()) {
+            DailyClose close = toClose(currency, bar);
+            closesByDay.putIfAbsent(close.date(), close);
+        }
+        return List.copyOf(closesByDay.values());
     }
 
     private TimeSeriesResponse call(String symbol, String startDate, String endDate) {

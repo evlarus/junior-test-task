@@ -1,0 +1,11 @@
+target
+.git
+.github
+.idea
+.vscode
+*.iml
+.mvn
+mvnw
+mvnw.cmd
+.env
+docs

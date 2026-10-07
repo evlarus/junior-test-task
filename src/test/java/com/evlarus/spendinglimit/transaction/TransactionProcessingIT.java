@@ -110,6 +110,13 @@ class TransactionProcessingIT {
 
         assertThat(jdbc.sql("select limit_sum from spending_limit where account = ? and is_default")
                 .param(account.value()).query(BigDecimal.class).single()).isEqualByComparingTo("1000");
+        client.get().uri(EXCEEDED + "?account={account}", account.value())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].datetime").isEqualTo("2023-02-10T11:00:00Z")
+                .jsonPath("$[0].limit_sum").isEqualTo(1000.00)
+                .jsonPath("$[0].limit_datetime").isEqualTo("2023-02-10T10:00:00Z");
     }
 
     @Test

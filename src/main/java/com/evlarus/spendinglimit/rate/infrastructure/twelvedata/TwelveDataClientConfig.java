@@ -10,6 +10,8 @@ import org.springframework.resilience.annotation.EnableResilientMethods;
 import org.springframework.web.client.support.RestClientHttpServiceGroupConfigurer;
 import org.springframework.web.service.registry.HttpServiceGroupConfigurer;
 import org.springframework.web.service.registry.ImportHttpServices;
+import org.zalando.logbook.Logbook;
+import org.zalando.logbook.spring.LogbookClientHttpRequestInterceptor;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -27,7 +29,7 @@ class TwelveDataClientConfig {
      * lenient mapper. Runs after Spring Boot's configurers, which would otherwise install the strict converter.
      */
     @Bean
-    RestClientHttpServiceGroupConfigurer twelveDataLenientJson() {
+    RestClientHttpServiceGroupConfigurer twelveDataLenientJson(Logbook logbook) {
         JsonMapper lenientMapper = JsonMapper.builder()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .build();
@@ -35,8 +37,9 @@ class TwelveDataClientConfig {
 
             @Override
             public void configureGroups(HttpServiceGroupConfigurer.Groups<org.springframework.web.client.RestClient.Builder> groups) {
-                groups.filterByName(GROUP).forEachClient((group, builder) ->
-                        builder.messageConverters(List.of(new JacksonJsonHttpMessageConverter(lenientMapper))));
+                groups.filterByName(GROUP).forEachClient((group, builder) -> builder
+                        .messageConverters(List.of(new JacksonJsonHttpMessageConverter(lenientMapper)))
+                        .requestInterceptor(new LogbookClientHttpRequestInterceptor(logbook)));
             }
 
             @Override

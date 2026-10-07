@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * Full application on a random HTTP port with PostgreSQL in Testcontainers.
+ * Full application on a random HTTP port with PostgreSQL in Testcontainers and WireMock in place of Twelve Data.
  *
  * <p>Every integration test uses exactly this annotation and nothing that changes the context
  * (no {@code @MockitoBean}, no extra properties), so Spring caches one context and one database
@@ -23,6 +23,6 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
 @ActiveProfiles("test")
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, TwelveDataMockConfiguration.class})
 public @interface IntegrationTest {
 }

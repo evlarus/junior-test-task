@@ -12,7 +12,7 @@ spring:
     serviceclient:
       twelvedata:
         # base-url points to WireMock, see ExternalServicesConfiguration
-        read-timeout: 500ms
+        read-timeout: 2s
 
 app:
   # Jobs are triggered explicitly by the tests that need them

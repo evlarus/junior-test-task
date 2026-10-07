@@ -96,10 +96,9 @@ class ExchangeRateServiceIT {
 
     @Test
     void concurrentMissesOfTheSameDayShareOneRequest() throws Exception {
-        // The delay keeps the request in flight while the other callers arrive; it stays well below the
-        // 500 ms test read-timeout, which for the JDK client covers the whole exchange including connecting
+        // The delay keeps the request in flight while the other callers arrive (test read-timeout is 2 s)
         twelveDataMock.stubFor(timeSeriesRequest("KZT")
-                .willReturn(okJson(timeSeries("KZT", Map.of(monday, "433.1"))).withFixedDelay(100)));
+                .willReturn(okJson(timeSeries("KZT", Map.of(monday, "433.1"))).withFixedDelay(300)));
         List<Callable<RateLookup>> callers = IntStream.range(0, 8)
                 .<Callable<RateLookup>>mapToObj(i -> () -> service.findRate(KZT, monday))
                 .toList();

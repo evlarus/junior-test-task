@@ -118,15 +118,15 @@ class TwelveDataRateProviderIT {
 
     @Test
     void timeoutIsNotRetried() {
-        // read-timeout is 500 ms in the test profile
-        twelveDataMock.stubFor(timeSeriesRequest("KZT").willReturn(okJson(CLOSES).withFixedDelay(1_500)));
+        // read-timeout is 2 s in the test profile; with retries the call would take three timeouts (over 6 s)
+        twelveDataMock.stubFor(timeSeriesRequest("KZT").willReturn(okJson(CLOSES).withFixedDelay(3_000)));
         long started = System.nanoTime();
 
         assertThatThrownBy(() -> provider.dailyCloses(KZT, FRIDAY, MONDAY))
                 .isInstanceOf(RateProviderException.class)
                 .isNotInstanceOf(TransientRateProviderException.class)
                 .hasMessageContaining("did not respond in time");
-        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofMillis(1_400));
+        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofMillis(2_900));
         twelveDataMock.verify(exactly(1), timeSeriesRequested("KZT"));
     }
 

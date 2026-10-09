@@ -18,11 +18,23 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   app:
     build: .
     image: spending-limit-service:local
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -31,6 +43,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-spending_limits}
       BUSINESS_ZONE: ${BUSINESS_ZONE:-UTC}
       RATES_PROVIDER: ${RATES_PROVIDER:-fixed}
+      RATES_CACHE: redis
+      REDIS_HOST: redis
       TWELVEDATA_API_KEY: ${TWELVEDATA_API_KEY:-}
     ports:
       - "${SERVER_PORT:-8080}:8080"

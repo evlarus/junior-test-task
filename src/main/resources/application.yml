@@ -14,6 +14,13 @@ spring:
       # A transaction waiting for a locked row gives up after this time instead of hanging; the work is retried later
       connection-init-sql: SET lock_timeout TO '${DB_LOCK_TIMEOUT:5s}'
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      connect-timeout: 500ms
+      timeout: 500ms
+
   jpa:
     open-in-view: false
     hibernate:
@@ -70,6 +77,9 @@ management:
       probes:
         enabled: true
       show-details: always
+  health:
+    redis:
+      enabled: false
   metrics:
     tags:
       application: ${spring.application.name}
@@ -103,6 +113,9 @@ app:
   rates:
     provider: ${RATES_PROVIDER:twelvedata}
     lookback-days: 10
+    cache:
+      type: ${RATES_CACHE:none}
+      ttl: 30d
     supported-currencies: KZT, RUB
     prefetch-cron: "0 5 0 * * *"
     twelve-data:

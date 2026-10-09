@@ -38,6 +38,7 @@ class ExchangeRateServiceTest {
     private static final DailyClose FRIDAY_CLOSE = new DailyClose(KZT, FRIDAY, new BigDecimal("431.8"));
 
     private final ExchangeRateRepository repository = mock(ExchangeRateRepository.class);
+    private final ExchangeRateCache cache = mock(ExchangeRateCache.class);
     private final ExchangeRateProvider provider = mock(ExchangeRateProvider.class);
 
     private ExchangeRateService serviceAt(LocalDate today) {
@@ -45,16 +46,38 @@ class ExchangeRateServiceTest {
         RatesProperties properties = new RatesProperties(
                 RatesProperties.Provider.FIXED, 10, Set.of(KZT, RUB),
                 new RatesProperties.TwelveData(null), new RatesProperties.Fixed(Map.of()));
-        return new ExchangeRateService(repository, provider, UTC_CALENDAR, clock, properties, new SimpleMeterRegistry());
+        return new ExchangeRateService(repository, cache, provider, UTC_CALENDAR, clock, properties, new SimpleMeterRegistry());
     }
 
     @Test
-    void storedRateIsUsedWithoutAskingTheProvider() {
+    void cachedRateIsUsedWithoutTheDatabaseOrTheProvider() {
+        ExchangeRate cached = new ExchangeRate(KZT, FRIDAY, new BigDecimal("431.8"), FRIDAY, RateKind.CLOSE);
+        when(cache.get(KZT, FRIDAY)).thenReturn(Optional.of(cached));
+
+        assertThat(serviceAt(MONDAY).findRate(KZT, FRIDAY)).isEqualTo(new RateLookup.Found(cached));
+        verify(repository, never()).find(any(), any());
+        verify(provider, never()).dailyCloses(any(), any(), any());
+    }
+
+    @Test
+    void storedRateIsUsedWithoutAskingTheProviderAndIsCached() {
         ExchangeRate stored = new ExchangeRate(KZT, FRIDAY, new BigDecimal("431.8"), FRIDAY, RateKind.CLOSE);
         when(repository.find(KZT, FRIDAY)).thenReturn(Optional.of(stored));
 
         assertThat(serviceAt(MONDAY).findRate(KZT, FRIDAY)).isEqualTo(new RateLookup.Found(stored));
         verify(provider, never()).dailyCloses(any(), any(), any());
+        verify(cache).put(stored);
+    }
+
+    @Test
+    void fetchedRateIsCachedOnceItIsStored() {
+        ExchangeRate stored = new ExchangeRate(KZT, FRIDAY, new BigDecimal("431.8"), FRIDAY, RateKind.CLOSE);
+        when(repository.find(KZT, FRIDAY)).thenReturn(Optional.empty(), Optional.of(stored));
+        when(provider.dailyCloses(KZT, FRIDAY.minusDays(10), FRIDAY)).thenReturn(List.of(FRIDAY_CLOSE));
+
+        serviceAt(MONDAY).findRate(KZT, FRIDAY);
+
+        verify(cache).put(stored);
     }
 
     @Test
@@ -89,6 +112,7 @@ class ExchangeRateServiceTest {
 
         assertThat(lookup).isInstanceOf(RateLookup.Found.class);
         assertThat(storedRates()).noneMatch(rate -> rate.rateDate().equals(SATURDAY));
+        verify(cache, never()).put(any());
     }
 
     @Test

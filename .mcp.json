@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@toolbox-sdk/server@1.14.0", "--prebuilt", "postgres", "--stdio"],
+      "env": {
+        "POSTGRES_HOST": "${MCP_DB_HOST:-localhost}",
+        "POSTGRES_PORT": "${DB_PORT:-5432}",
+        "POSTGRES_DATABASE": "${DB_NAME:-spending_limits}",
+        "POSTGRES_USER": "mcp_readonly",
+        "POSTGRES_PASSWORD": "${MCP_DB_PASSWORD:-mcp_readonly}"
+      }
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
+    }
+  }
+}

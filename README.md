@@ -194,7 +194,7 @@ com.evlarus.spendinglimit
 | `BUSINESS_ZONE` | `UTC` | пояс, в котором считаются месяцы и дни |
 | `DB_LOCK_TIMEOUT` | `5s` | сколько ждать заблокированную строку |
 | `SERVER_PORT` | `8080` | порт HTTP |
-| `MCP_DB_PASSWORD` | — | пароль пользователя `mcp_readonly` для MCP-сервера |
+| `MCP_DB_PASSWORD` | `mcp_readonly` | пароль локального пользователя `mcp_readonly` для MCP-сервера |
 
 Прочие настройки — в `src/main/resources/application.yml` (`app.*`, `spring.http.serviceclient.twelvedata.*`).
 
@@ -222,7 +222,7 @@ com.evlarus.spendinglimit
 
 ## Скиллы для AI-агентов
 
-Скиллы в формате Agent Skills лежат в `.agents/skills/`:
+Скиллы в формате Agent Skills лежат в `.claude/skills/`:
 
 | Скилл | Когда применяется |
 |---|---|
@@ -230,10 +230,9 @@ com.evlarus.spendinglimit
 | `write-limit-test` | написать тест на логику лимитов, флагов и отчёта |
 | `create-db-migration` | изменить схему БД миграцией Flyway |
 
-Codex, Cursor и GitHub Copilot читают `.agents/skills/` напрямую. Для Claude Code в репозитории есть симлинк
-`.claude/skills → ../.agents/skills`. На Windows git создаёт симлинки только при включённом режиме
-разработчика (Параметры → Система → Для разработчиков) и `git config core.symlinks true`; после этого
-выполните `git checkout -- .claude/skills`.
+Claude Code читает их оттуда на любой ОС. Для Codex, Cursor и GitHub Copilot в репозитории есть симлинк
+`.agents/skills → ../.claude/skills`. Направление связи выбрано так, потому что на Windows git создаёт
+симлинки только в режиме разработчика, а скиллы должны работать в Claude Code без настройки системы.
 
 Агент выбирает скилл сам по описанию задачи, например «добавь провайдера курсов Open Exchange Rates»;
 в Claude Code скилл можно вызвать и явно: `/add-exchange-rate-provider`.
@@ -245,8 +244,8 @@ Codex, Cursor и GitHub Copilot читают `.agents/skills/` напрямую.
 - **postgres** — [MCP Toolbox for Databases](https://mcp-toolbox.dev) с набором инструментов для PostgreSQL:
   агент видит схему, индексы и данные локальной базы. Подключение идёт под пользователем `mcp_readonly`
   только для чтения (его создаёт `docker/postgres/init/01-create-mcp-readonly-user.sh` при первом запуске
-  контейнера). Перед запуском агента задайте переменную `MCP_DB_PASSWORD` (по умолчанию в Docker Compose —
-  `mcp_readonly`). Для уже созданной базы пользователь появится после `docker compose down -v`.
+  контейнера). Пароль берётся из переменной `MCP_DB_PASSWORD`, по умолчанию — `mcp_readonly`, как в
+  `docker-compose.yml`: это локальный пользователь только для чтения. Для уже созданной базы пользователь появится после `docker compose down -v`.
   Команда запуска рассчитана на Windows (`cmd /c npx …`); на macOS и Linux замените `"command": "cmd"`
   и первый аргумент `"/c"` на `"command": "npx"`.
 - **context7** — актуальная документация по Spring Boot и библиотекам проекта.

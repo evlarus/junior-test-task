@@ -9,7 +9,7 @@
         "POSTGRES_PORT": "${DB_PORT:-5432}",
         "POSTGRES_DATABASE": "${DB_NAME:-spending_limits}",
         "POSTGRES_USER": "mcp_readonly",
-        "POSTGRES_PASSWORD": "${MCP_DB_PASSWORD}"
+        "POSTGRES_PASSWORD": "${MCP_DB_PASSWORD:-mcp_readonly}"
       }
     },
     "context7": {

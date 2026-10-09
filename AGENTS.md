@@ -77,7 +77,7 @@ provider happen before, outside any database transaction. Pending transactions a
 
 ## Skills and MCP
 
-- Project skills live in `.agents/skills/` (`.claude/skills` links there): adding a rate provider, writing a
+- Project skills live in `.claude/skills/` (`.agents/skills` links there): adding a rate provider, writing a
   limit test, creating a migration.
-- `.mcp.json` connects a read-only PostgreSQL server (user `mcp_readonly`, needs `MCP_DB_PASSWORD`) and
+- `.mcp.json` connects a read-only PostgreSQL server (user `mcp_readonly`, password from `MCP_DB_PASSWORD`, default `mcp_readonly`) and
   Context7 for up-to-date library documentation.

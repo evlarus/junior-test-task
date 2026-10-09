@@ -34,6 +34,7 @@ public class ExchangeRateService {
     private static final Logger log = LoggerFactory.getLogger(ExchangeRateService.class);
 
     private final ExchangeRateRepository repository;
+    private final ExchangeRateCache cache;
     private final ExchangeRateProvider provider;
     private final BusinessCalendar calendar;
     private final Clock clock;
@@ -45,12 +46,14 @@ public class ExchangeRateService {
 
     public ExchangeRateService(
             ExchangeRateRepository repository,
+            ExchangeRateCache cache,
             ExchangeRateProvider provider,
             BusinessCalendar calendar,
             Clock clock,
             RatesProperties properties,
             MeterRegistry meterRegistry) {
         this.repository = repository;
+        this.cache = cache;
         this.provider = provider;
         this.calendar = calendar;
         this.clock = clock;
@@ -66,9 +69,15 @@ public class ExchangeRateService {
         if (currency.equals(Money.USD)) {
             return new RateLookup.Found(ExchangeRate.usd(date));
         }
+        Optional<ExchangeRate> cached = cache.get(currency, date);
+        if (cached.isPresent()) {
+            count("cache");
+            return new RateLookup.Found(cached.get());
+        }
         Optional<ExchangeRate> stored = repository.find(currency, date);
         if (stored.isPresent()) {
             log.debug("Using the stored {} rate for {}", currency, date);
+            cache.put(stored.get());
             count("stored");
             return new RateLookup.Found(stored.get());
         }
@@ -128,7 +137,9 @@ public class ExchangeRateService {
         repository.addAllIfAbsent(toStore);
         count("fetched");
         // If a concurrent writer stored this day first, its rate wins: every transaction of a day uses one rate
-        return new RateLookup.Found(repository.find(currency, date).orElse(rate));
+        Optional<ExchangeRate> stored = repository.find(currency, date);
+        stored.ifPresent(cache::put);
+        return new RateLookup.Found(stored.orElse(rate));
     }
 
     private RateLookup singleFlight(RateKey key, Supplier<RateLookup> loader) {

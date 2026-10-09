@@ -8,12 +8,12 @@
 транзакции, превысившие лимит, вместе с данными этого лимита.
 
 **Стек:** Java 21, Spring Boot 4.1 (Web MVC на виртуальных потоках), Spring Data JPA / Hibernate 7,
-PostgreSQL 18, Flyway, MapStruct, Jackson 3, springdoc-openapi, Logbook, Micrometer / Prometheus,
+PostgreSQL 18, Flyway, Redis, MapStruct, Jackson 3, springdoc-openapi, Logbook, Micrometer / Prometheus,
 JUnit 5, Testcontainers, WireMock, ArchUnit, JaCoCo, Docker, GitHub Actions.
 
 ## Быстрый старт
 
-### Весь сервис с базой одной командой
+### Весь сервис с базой и кэшем одной командой
 
 ```bash
 docker compose up --build
@@ -119,9 +119,12 @@ JSON в формате snake_case. Неизвестные поля, число �
 Приём транзакций устроен так, чтобы сбой Twelve Data не терял данные и не задерживал ответ дольше пары секунд.
 
 1. Транзакция **сохраняется в БД до любых внешних вызовов**.
-2. Курс берётся **сначала из своей БД**. К Twelve Data сервис обращается только за днём, которого ещё нет:
+2. Курс берётся **сначала из кэша Redis, затем из своей БД**. К Twelve Data сервис обращается только за днём,
+   которого ещё нет:
    одним запросом за 10 предыдущих дней, и сохраняет всё полученное. Каждый день оплачивается один раз,
-   одновременные запросы одного дня объединяются в один HTTP-запрос.
+   одновременные запросы одного дня объединяются в один HTTP-запрос. В Redis попадают только курсы, уже
+   сохранённые в БД: они не меняются, поэтому кэш не устаревает (срок хранения — 30 дней). Недоступный Redis
+   не мешает работе: сервис пишет предупреждение и читает курс из БД, а в health-check Redis не участвует.
 3. **Таймауты:** соединение 2 с, ответ 3 с.
 4. **Повторы:** временные сбои (HTTP 5xx, 429 — и в статусе, и в теле ответа при HTTP 200, обрыв соединения)
    повторяются сразу 2 раза с паузой 200 и 400 мс. Таймаут и ошибки 4xx не повторяются: медленный провайдер
@@ -172,7 +175,7 @@ com.evlarus.spendinglimit
 |---|---|
 | `spending_limit` | лимиты в USD по счёту и категории; неизменяемы (триггер) |
 | `monthly_spending` | траты в USD по счёту, категории и месяцу; строка блокировки при проверке лимита |
-| `exchange_rate` | курсы закрытия по валюте и дню |
+| `exchange_rate` | курсы закрытия по валюте и дню; поверх таблицы — кэш в Redis |
 | `bank_transaction` | транзакции, их статус, сумма в USD, применённый лимит и флаг |
 
 Инварианты продублированы в БД ограничениями `CHECK`: формат счёта, положительная сумма, у обработанной
@@ -191,6 +194,8 @@ com.evlarus.spendinglimit
 | `DB_NAME`, `DB_PORT` | `spending_limits`, `5432` | база для `docker-compose.yml` и профиля `dev` |
 | `RATES_PROVIDER` | `twelvedata`, в `dev` и Docker Compose — `fixed` | источник курсов |
 | `TWELVEDATA_API_KEY` | — | ключ Twelve Data; без него профиль `prod` с `twelvedata` не запускается |
+| `RATES_CACHE` | `none`, в Docker Compose — `redis` | кэш курсов: `none` или `redis` |
+| `REDIS_HOST`, `REDIS_PORT` | `localhost`, `6379` | подключение к Redis |
 | `BUSINESS_ZONE` | `UTC` | пояс, в котором считаются месяцы и дни |
 | `DB_LOCK_TIMEOUT` | `5s` | сколько ждать заблокированную строку |
 | `SERVER_PORT` | `8080` | порт HTTP |
@@ -204,7 +209,7 @@ com.evlarus.spendinglimit
   и ответы, включая вызовы Twelve Data, пишет Logbook; номера счетов и заголовок `Authorization` маскируются.
 - Actuator: `/actuator/health` (с `liveness` и `readiness`), `/actuator/metrics`, `/actuator/prometheus`.
 - Метрики: `transactions.processed{limit_exceeded}`, `transactions.pending`,
-  `exchange_rate.lookups{source}`, `http.client.requests` для Twelve Data.
+  `exchange_rate.lookups{source}` (`cache`, `stored`, `fetched`, `unavailable`), `http.client.requests` для Twelve Data.
 
 ## Тесты
 
@@ -214,7 +219,8 @@ com.evlarus.spendinglimit
 - **Web-тесты** (`@WebMvcTest`) — валидация, формат JSON и ошибок.
 - **Интеграционные** — PostgreSQL в Testcontainers: блокировки и таймаут блокировки, параллельные транзакции
   одного счёта, повторная обработка, отчёт одним запросом, клиент Twelve Data с WireMock (повторы, таймауты,
-  ошибки в теле ответа), маскирование логов, метрики.
+  ошибки в теле ответа), кэш курсов в Redis из Testcontainers (в том числе при недоступном Redis),
+  маскирование логов, метрики.
 - **Сквозной тест** `SpecificationScenariosE2EIT` поднимает приложение на случайном порту и только через HTTP
   воспроизводит «1 случай» из задания: лимиты 1 и 10 января 2022, транзакции в тенге, отчёт ровно с
   транзакциями 3 и 13 января и превышенными ими лимитами. Тем же способом проверяется «2 случай».

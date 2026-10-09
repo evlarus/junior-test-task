@@ -20,6 +20,8 @@ app:
     enabled: false
   rates:
     provider: twelvedata
+    cache:
+      type: redis
     twelve-data:
       api-key: test-api-key
       retry-delay: 10ms

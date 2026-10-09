@@ -21,7 +21,7 @@ the transactions that exceeded them. See `README.md` for the API and the busines
 | Run locally (fixed rates, no API key) | `./mvnw spring-boot:run` |
 | Whole stack in Docker | `docker compose up --build` |
 
-Java 21, Spring Boot 4.1, Jackson 3, Hibernate 7, PostgreSQL 18, Flyway, Testcontainers 2, WireMock 3.
+Java 21, Spring Boot 4.1, Jackson 3, Hibernate 7, PostgreSQL 18, Flyway, Redis (rate cache), Testcontainers 2, WireMock 3.
 
 ## Architecture
 
@@ -33,7 +33,8 @@ with features `limit`, `rate`, `transaction` and the shared `common`.
   No Spring, JPA or Jackson (`ArchitectureTest` fails the build otherwise).
 - `application` — use cases and ports to external systems (`ExchangeRateProvider`, `PendingTransactionQueue`,
   read-side queries). Services orchestrate: load, call the domain method, save.
-- `infrastructure` — JPA entities and adapters (`Jpa*Repository`), JDBC queries, the Twelve Data client.
+- `infrastructure` — JPA entities and adapters (`Jpa*Repository`), JDBC queries, the Twelve Data client,
+  the Redis rate cache (`RedisExchangeRateCache`; a cache failure is logged and treated as a miss).
   Entities are separate from domain classes; aggregates reference each other by id.
 - `api` — controllers, request/response records, MapStruct mappers. Controllers never use repositories.
 - Feature packages must not form cycles (`ArchitectureTest`).
@@ -62,7 +63,7 @@ provider happen before, outside any database transaction. Pending transactions a
 
 - Domain rules: plain JUnit 5 + AssertJ in `<feature>/domain`, with `support/DomainFixtures`.
 - Web layer: `@WebMvcTest` with `MockMvcTester`.
-- Integration: `support/IntegrationTest` only (one shared Spring context with PostgreSQL in Testcontainers,
+- Integration: `support/IntegrationTest` only (one shared Spring context with PostgreSQL and Redis in Testcontainers,
   WireMock for Twelve Data and `MutableClock`); isolate data with `TestAccounts.unique()`; do not add
   `@MockitoBean` or per-test properties to integration tests.
 - `e2e/SpecificationScenariosE2EIT` replays both scenarios of the specification over HTTP; keep it green.

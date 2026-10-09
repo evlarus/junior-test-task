@@ -1,4 +1,4 @@
-# Local development: defaults match compose.yaml, any value can be overridden with environment variables.
+# Local development: defaults match docker-compose.yml, any value can be overridden with environment variables.
 spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:${DB_PORT:5432}/${DB_NAME:spending_limits}}
